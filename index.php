@@ -1,412 +1,515 @@
-<!DOCTYPE HTML>
-<html>
+<?php
+require_once 'function/newbgm.php';
+require_once 'config.php';
+$newbgm = getTodays();
+$isDisplay_userbgm = '';
+if (@$_COOKIE["noUserbgm"] == 'true') {
+  if (@$_COOKIE["user_id"] || @$_COOKIE["user_ctime"]) {
+    setCookie("user_id", "", time() - 60, "/");
+    setCookie("user_ctime", "", time() - 60, "/");
+  }
+  $isDisplay_userbgm = 'style="display:none;"';
+}
+?>
+<!DOCTYPE html>
+
 <head>
-	<meta charset="UTF-8">
-	<meta content="IE=edge" http-equiv="X-UA-Compatible">
-	<meta content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no, width=device-width" name="viewport">
-    <meta name="keywords" content="airAnime,Anime Search Engine,动漫搜索,Trii Hsia">
-    <meta name="description" content="一款不错的聚合动漫&番剧搜索程序">
-	<title>airAnime Online - Polymeric Anime Search Engine</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <title>airAnime v2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="content-language" content="zh-CN" />
 
-    <link href="css/mori.css" rel="stylesheet">
-	<link href="css/base.min.css" rel="stylesheet">
-	<link href="css/project.min.css" rel="stylesheet">
-    <link href="js/zoom-js/css/zoom.css" rel="stylesheet">
+  <link type="favicon" rel="shortcut icon" href="favicon.ico">
+  <link href="assert/css/mdui.min.css" rel="stylesheet">
+  <link href="assert/css/n.css" rel="stylesheet">
 </head>
-<body class="page-brand">
 
-	<?php
-	require "./functions/pages.php";
-	pagepart('header');
-	pagepart('menu');
-	?>
+<body class="mdui-appbar-with-toolbar mdui-theme-primary-indigo mdui-theme-accent-pink">
 
-	<!-- 主 -->
-	<main class="content">
-		<div class="content-header ui-content-header">
-			<div class="container">
-				<div class="row">
-					<div class="col-lg-6 col-lg-push-3 col-sm-10 col-sm-push-1">
-						<h1 class="content-heading">airAnime Online</h1>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="container">
-			<div class="row">
-				<div class="col-lg-6 col-lg-push-3 col-sm-10 col-sm-push-1">
-					<section class="content-inner margin-top-no">
-						<div class="card">
-							<div class="card-main">
-								<div class="card-inner">
-								<form action='run.php' method='' onsubmit="return validation();">
-										<div class="form-group form-group-label">
-											<label class="floating-label" for="ui_floating_label_example">Title</label>
-											<div id="search">
-											<input class="form-control" id="title" type="text" name='title' autocomplete="off">
-											</div>
-											<br>
-											搜索指令: <code><a href="javascript:void(0)" id="addsctp">!image</a></code> <code><a href="javascript:void(0)" id="addscmh">&comic</a></code> <code><a href="javascript:void(0)" id="addscxs">&novel</a></code>
-											<div style="text-align:right;">
-											<a class="btn btn-flat waves-attach" id="btnUP">Upload</a> <a class="btn btn-brand waves-attach waves-light" href="javascript:void(0)" id="btnS"> Search </a> 
-											</div>
-											<div class="progress" style="display:none;" id="loading">
-    										<div class="progress-bar-indeterminate"></div>
-											</div>
-										</div>
-								</form>
-								</div>
-							</div>
-						</div>
-					</section>
+  <header mdui-headroom class="mdui-appbar mdui-appbar-fixed mdui-shadow-0 n-shadows">
+    <div class="mdui-toolbar mdui-color-white">
+      <a href="./" class="mdui-typo-headline lighter">airAnime v2</a>
+      <div class="mdui-toolbar-spacer"></div>
+      <a mdui-menu="{target: '#example-attr'}" class="mdui-btn mdui-btn-icon"><i class="mdui-icon material-icons">menu</i></a>
+      <ul class="mdui-menu" id="example-attr">
+        <li class="mdui-menu-item">
+          <a href="./" class="mdui-ripple">首页</a>
+        </li>
+        <li class="mdui-menu-item">
+          <a href="./page/setting.php">设置</a>
+        </li>
+        <li class="mdui-menu-item">
+          <a href="./page/about.php">关于</a>
+        </li>
+        <li class="mdui-menu-item">
+          <a href="./page/doc.php" class="mdui-ripple">文档</a>
+        </li>
+        <li class="mdui-menu-item">
+          <a target="_blank" href="https://www.icloud.com/shortcuts/95f1954703444d09b7bea48e6bc91f57" class="mdui-ripple">iOS 捷径</a>
+        </li>
+        <li class="mdui-divider"></li>
+        <li class="mdui-menu-item">
+          <a target="_blank" href="https://github.com/txperl/airAnime" class="mdui-ripple">GitHub</a>
+          <a target="_blank" href="https://yumoe.com/" class="mdui-ripple">TriiHsia</a>
+        </li>
+      </ul>
+    </div>
+  </header>
+  <div class="searchbar mdui-toolbar mdui-color-white mdui-col-xs-12 searchbar_active" style="margin-bottom: 0;">
+    <select id="typeName" class="mdui-select" style="margin: 0 12px 0 16px;" onchange='typeChange(this[selectedIndex].value);'>
+      <option value="a">番剧</option>
+      <option value="c">漫画</option>
+      <!-- <option value="n">小说</option> -->
+      <option value="o" disabled>-</option>
+      <option value="i">图片</option>
+    </select>
+    <input id="keytitle" class="mdui-textfield-input" type="search" autocomplete="off" placeholder="想要搜索什么动漫呢？" />
+    <button id="btnUP" class="mdui-btn mdui-ripple" style="min-width: 56px;display: none;">UP</button>
+    <button id="btnS" class="mdui-btn mdui-btn-icon mdui-ripple"><i class="mdui-icon material-icons">search</i></button>
+  </div>
+  <div class="mdui-col-xs-12" style="margin-bottom: 40px;">
+    <ul id="Sl" class="h" style="margin: 0;">
+      <div id="rst_sact"></div>
+    </ul>
+  </div>
 
-                    <!-- 自动联想结果 -->
-					<div class="card" style="margin-top:-15px;margin-bottom:45px;">
-							<div class="card-main">
-								<div class="card-inner" id="srhauto" style="display:none;">
-									<div id="search_auto"></div>
-								</div>
-							</div>
-					</div>
+  <br><br><br>
 
-        <!-- 以图搜番说明 -->
-        <div id='picstip' style="display:none;">
-            <div class="card">
-            <div class="card-main">
-                <div class="card-inner">
-                    <p class="card-heading">「PicSearch」以图搜番说明</p>
-                    <p class="margin-bottom-lg">1.只可搜索出自日本动画(动漫)中的图片<br>2.图像大小 <= 1MB<br>3.若搜索本地图片，请点击UPLOAD上传图像再搜索<br>4.若图片为GIF格式，必须上传后才可正常搜索<br><br>更多搜索指令使用说明请参考 <a href="./pages/srhcode.php">搜索指令</a>&<a href="./pages/start.php">使用说明</a> 页面</p>
-                </div>
-            </div></div>
+  <!-- 番剧信息 -->
+  <div id="bgminfo_card" class="mdui-container main-card" style="display:none;">
+    <div class="mdui-card mdui-col-xs-12 mdui-col-md-10 mdui-col-offset-md-1 sites-card">
+
+      <div class="mdui-card-header">
+        <div class="mdui-card-header-title">番剧信息</div>
+        <div id="des_bgminfo_card" class="mdui-card-header-subtitle"></div>
+      </div>
+
+    </div>
+  </div>
+  <!-- end -->
+
+  <!-- 以图搜番 -->
+  <div id="rst_info_card" class="mdui-container main-card" style="display: none;">
+    <div style="padding: 0;" class="mdui-card mdui-col-xs-12 mdui-col-md-10 mdui-col-offset-md-1 sites-card">
+      <div class="mdui-row" id="rst_info"></div>
+    </div>
+  </div>
+  <!-- end -->
+
+  <!-- 数据库资源 -->
+  <div id="rst_res_card" class="mdui-container main-card" style="display: none;">
+    <div class="mdui-card no-overflow mdui-col-xs-12 mdui-col-md-10 mdui-col-offset-md-1 sites-card">
+
+      <div class="mdui-card-header">
+        <div class="mdui-card-header-title">Resources</div>
+        <div class="mdui-card-header-subtitle">#数据库中的可能结果</div>
+      </div>
+
+      <div class="mdui-card-content">
+        <div id="rst_res"></div>
+      </div>
+
+    </div>
+
+  </div>
+  <!-- end -->
+
+  <!-- BT 搜索 -->
+  <div id="rst_bt_card" class="mdui-container main-card" style="display: none;">
+    <div class="mdui-card mdui-col-xs-12 mdui-col-md-10 mdui-col-offset-md-1 sites-card">
+
+      <div class="mdui-card-header">
+        <div class="mdui-card-header-title">Btrst</div>
+        <div class="mdui-card-header-subtitle">#下载源搜索结果</div>
+      </div>
+
+      <div class="mdui-row">
+        <div id="rst_bt" class="mdui-panel mdui-panel-gapless" mdui-panel></div>
+      </div>
+
+    </div>
+  </div>
+  <!-- end -->
+
+  <!-- 搜索结果 -->
+  <div id="rst_s_card" class="mdui-container main-card" style="display: none;">
+    <div class="mdui-card mdui-col-xs-12 mdui-col-md-10 mdui-col-offset-md-1 sites-card">
+
+      <div class="mdui-card-header">
+        <div class="mdui-card-header-title">Results</div>
+        <div class="mdui-card-header-subtitle">#在线搜索结果</div>
+      </div>
+
+      <div class="mdui-row">
+        <div id="rst_s" class="mdui-panel mdui-panel-gapless" mdui-panel></div>
+      </div>
+
+    </div>
+  </div>
+  <!-- end -->
+
+  <!-- 追番列表-->
+  <div id="userbgm_card" class="mdui-container main-card" <?php echo $isDisplay_userbgm; ?>>
+    <div class="mdui-card mdui-col-xs-12 mdui-col-md-10 mdui-col-offset-md-1 sites-card">
+
+      <div class="mdui-card-header">
+        <div class="mdui-card-header-title"><a href="javascript:getUserbgm('refresh');" style="color:#000;text-decoration:none;">我的追番</a><a href="javascript:noUserbgm();" style="float:right;color:#a5a5a5;text-decoration:none;">x</a></div>
+        <div class="mdui-card-header-subtitle"><span id="des_userbgm_card">#追番列表已经开启，可至 <a href="./page/setting.php" style="color:#333;">右上角-设置</a> 关联您的 Bangumi.tv 账号以同步追番表</span></div>
+      </div>
+
+      <div class="mdui-row">
+        <div id="userbgm_pro" class="mdui-progress" style="display:none;">
+          <div class="mdui-progress-indeterminate"></div>
         </div>
+        <div id="userbgm_show"></div>
+      </div>
 
+    </div>
+  </div>
+  <!-- end -->
+
+  <!-- 今日番剧 -->
+  <div id="newbgm_card" class="mdui-container main-card">
+    <div class="mdui-card mdui-col-xs-12 mdui-col-md-10 mdui-col-offset-md-1 sites-card">
+
+      <div class="mdui-card-header">
+        <div class="mdui-card-header-title">今日</div>
+        <div class="mdui-card-header-subtitle"><?php echo $newbgm[0] ?> & <a target="_blank" href="https://www.icloud.com/shortcuts/95f1954703444d09b7bea48e6bc91f57" style="color:#333;">airAnime 的 iOS 捷径</a>上线啦</div>
+      </div>
+
+      <div class="mdui-row">
         <?php
-            if (isset($_GET["title"])) {
-                $sotitle=$_GET["title"];
-            } else {
-                $sotitle='';
-            }
+        for ($i = 0; $i < count($newbgm[1]); $i++) {
+          echo $newbgm[1][$i];
+        }
         ?>
+      </div>
 
-			<div id="rst_show"></div>
+    </div>
+  </div>
+  <!-- end -->
 
-        <!-- 图片上传表单 -->
-        <div id='upimage' style="display:none;"> 
-            <form enctype="multipart/form-data" method="post" action="http://up.imgapi.com/" id="upform">
-            <input name="Token" id="token" value="{...}" type="hidden">
-            <input type="hidden" name="from" value="file">
-            <input type="hidden" name="httptype" value="1">
-            <input type="file" name="file" id="file" style="display:none">
-            <input type="submit" id='btnU' value="上传" class="btn">
-            </form>
-        </div>
+  <br><br><br>
 
-        <!-- 首页公示 -->
-        <div id='ifhomea' style="display:none;">
-            <div class="logo" id="logo" data-tilt data-tilt-glare="true" data-tilt-max-glare="0.3" data-tilt-speed="200" data-tilt-scale="1" data-tilt-max="12" data-tilt-perspective="900">
-                <span>Welcome</span>
-                <div class="homelink"><a href="./pages/start.php">&开始</a> <a href="./pages/about.php">&关于</a> <a href="./pages/srhcode.php">&搜索指令</a></div>
-            </div>
-        </div>
+  <!-- 图片上传表单 -->
+  <div id='upimage' style="display:none;">
+    <form enctype="multipart/form-data" method="post" action="https://sm.ms/api/upload" id="upform">
+      <input type="file" name="smfile" id="btnFile">
+      <input type="submit" id='btnUUP' value="Upload">
+    </form>
+  </div>
+  <!-- end -->
 
-        <!-- 随机推荐 -->
-        <div id='ifhomeaii' class="post-content" style="display:none;">
-            <h4><a style="color:#78909c;text-decoration:none;" id="todayB" href="javascript:void(0)">番剧推荐</a> <span style="font-size:10px;">点点看?</span></h4>
-            <div id="sugB_show">
-                <?php
-                    $myfile=fopen("./functions/bangumiToday.json", "r") or die("Unable to open file!");
-                        $bgmC=fgets($myfile);
-                    fclose($myfile);
-                    $bgmC=json_decode($bgmC, true);
-		    $id=$bgmC['id'];
-                    if ($bgmC['name_cn']=='') {
-                        $name=$bgmC['name'];
-                    } else {
-                        $name=$bgmC['name_cn'];
-                    }
-                    $des=$bgmC['summary'];
-                    $img=$bgmC['images']['large'];
-                    $air_date=$bgmC['air_date'];
+  <!-- 信息框 -->
+  <div class="mdui-dialog" id="airDialog"></div>
+  <!-- end -->
 
-                    if ($des=='') {
-                        $des='抱歉，暂无简介...';
-                    } else {
-                        $des=str_replace('　　','',$des);
-                        $des=str_replace(' ','',$des);
-                    }
+</body>
 
-                    $url='http://bgm.tv/subject/'.$id;
-                    echo '<div class="barc-t"><div class="barc-tile">';
-                    echo '<div style="width:40%;max-height:300px;float:left;margin-right:10px;"><img src="'.$img.'" data-action="zoom" class="img-rounded img-responsive"></div>';
-                    echo '<div style="padding-top:10px;padding-bottom:10px;"><a target="_blank" href="'.$url.'">'.$name.'</a><br><span class="arc-date">&'.$bgmC['name'].'</span><br><span class="arc-date">首播: '.$air_date.'</span><br><span id="desb" class="arc-date">'.$des.'</span><br><span class="arc-date">数据来源于Bangumi番组计划.</span></div>';
-                    echo '</div></div>';
-                ?>
-            </div>
-        </div>
-        
-        <!-- 今日新番 -->
-        <div id='ifhomeai' class="post-content" style="display:none;">
-            <?php
-                $file="./functions/bangumiS2017.json";
-                $bcon=file_get_contents($file);
-                $bcon=json_decode($bcon, true);
-                $today=date("N")-1;
-                $bcon=$bcon[$today];
-                $num=count($bcon['items']);
-                echo '<h4>今日 - 快乐'.$bcon['weekday']['cn'].'</h4>';
-                for ($i=0; $i < $num; $i++) { 
-                    if ($bcon['items'][$i]['name_cn']=='') {
-                        $name_cn=$bcon['items'][$i]['name'];
-                    } else {
-                        $name_cn=$bcon['items'][$i]['name_cn'];
-                    }
-                    echo '<div class="arc-t"><div class="arc-tile"><div style="box-shadow: 0 2px 15px 1px rgba(0,0,0,0.15);width:46%;max-height:150px;float:left;margin-right:6px;"><img src="'.$bcon['items'][$i]['images']['large'].'" data-action="zoom" class="img-rounded img-responsive"></div><small><a target="_blank" href="'.$bcon['items'][$i]['url'].'">'.$name_cn.'</a></small><br><span class="arc-date">&'.$bcon['items'][$i]['name'].'</span><br><span class="arc-date">首播: '.$bcon['items'][$i]['air_date'].'</span></div></div>';
-                }
-            ?>
-        </div>
+<script src="assert/js/mdui.min.js"></script>
+<script src="assert/js/jquery.min.js"></script>
+<script src="assert/js/jquery.lazyload.min.js"></script>
+<script src="assert/js/jquery.form.js"></script>
+<script src="assert/js/jquery.cookie.js"></script>
+<script src="assert/js/embed.js"></script>
 
-	</div></div></div>
+<script type="text/javascript">
+  $(document).ready(function() {
+    getUserbgm('none');
+  });
 
-	<?php
-	pagepart('footer');
-	pagepart('ball');
-	?>
+  $("#btnS").click(function() {
+    if ($('#keytitle').val() != '' && $('#keytitle').val() != 'loading...') {
+      var keytitle = document.getElementById("keytitle").value;
+      var type = document.getElementById("typeName").value;
+      var res_is = "<?php echo $GLOBALS['res_is']; ?>";
+      var bt_is = "<?php echo $GLOBALS['bt_is']; ?>";
+      $('#Sl').addClass("h");
+      $('#rst_sact').html('');
+      $('#rst_res_card').css('display', 'none');
+      $('#rst_s_card').css('display', 'none');
+      $('#userbgm_card').css('display', 'none');
+      $('#newbgm_card').css('display', 'none');
+      $('#bgminfo_card').css('display', 'none');
+      $('#rst_info_card').css('display', 'none');
 
-	<!-- js -->
-	<script src="js/jquery.min2.20.js"></script>
-	<script src="js/base.min.js"></script>
-	<script src="js/project.min.js"></script>
-    <script src="js/jquery.form.js"></script>
-    <script src="js/embed.js"></script>
-    <script src="js/zoom-js/js/zoom.js"></script>
-    <script src="js/vanilla-tilt.min.js"></script>
-    <script src="js/md5.js"></script>
-	<script type="text/javascript">
-        //UPLOAD被点击
-        $(function(){
-            $("#btnUP").click(function(){
-                $('#file').click();
-                getId("picstip").style.display="";
-                getId("srhauto").style.display="none";
-            });
-        });
-        //选择文件后
-        $("#file").change(function(){
-            if($(this).val()){
-                 $('#btnU').click();
-            }
-        });
-        //快捷插入
-        $(function(){
-            $("#addsctp").click(function(){
-                var obj=document.getElementById("title");
-                var val=obj.value;
-                obj.value="!image:;"+val;
-                $('#title').focus();
-                getId("picstip").style.display="";
-                getId("srhauto").style.display="none";
-            });
-        });
-        $(function(){
-            $("#addscxs").click(function(){
-                var obj=document.getElementById("title");
-				var val=obj.value;
-				if (val != '')
-					obj.value=val+" type:\\n/";
-            });
-        });
-        $(function(){
-            $("#addscmh").click(function(){
-                var obj=document.getElementById("title");
-				var val=obj.value;
-				if (val != '')
-					obj.value=val+" type:\\c/";
-            });
-        });
-        //判断首页
-        $(document).ready(function() {
-            var a = location.href;if(a=='http://airanime.applinzi.com/'){$("#ifhomea").fadeIn(300);}else $('#ifhomea').hide();
-            var c = location.href;if(c=='http://airanime.applinzi.com/'){$("#ifhomeaii").fadeIn(500);}else $('#ifhomeai').hide();
-            var b = location.href;if(b=='http://airanime.applinzi.com/'){$("#ifhomeai").fadeIn(600);}else $('#ifhomeai').hide();  
-        });
-        </script>
-        <script type="text/javascript">
-            //随机推荐
-            $("#todayB").click(function(){
-                todayB('run');
-            });
-
-           function todayB(code){ //today:个人推荐 run:随机推荐 up:更新缓存
-            if (code!='today') {$('#sugB_show').html('少女祈愿中...').css('display','block');}
-            var t=code;
-            $.post( './functions/bangumiSug.php', { 'code' : t },function(data){
-            if( data == '' ) 
-                $('#sugB_show').html('获取失败').css('display','none');
-            else
-                $('#sugB_show').html(data).css('display','block');
-                $("#translateB").click(function(){
-                    var text=document.getElementById("desb").innerHTML;
-                    baiduTr(text);
-                });
-                //百度搜索API
-                function baiduTr(text){
-                    var appid = '{...}';
-                    var key = '{...}';
-                    var salt = (new Date).getTime();
-                    var query = text;
-                    var from = 'auto';
-                    var to = 'zh';
-                    var str1 = appid + query + salt +key;
-                    var sign = MD5(str1);
-                    $.ajax({
-                        url: 'http://api.fanyi.baidu.com/api/trans/vip/translate',
-                        type: 'get',
-                        dataType: 'jsonp',
-                        data: {
-                            q: query,
-                            appid: appid,
-                            salt: salt,
-                            from: from,
-                            to: to,
-                            sign: sign
-                            },
-                        success: function (data) {
-                            var num=data['trans_result'].length;
-                            var text='';
-                            for (var i = 0; i < num; i++) {
-                                text=text+data['trans_result'][i]['dst'];
-                            }
-                            $('#desb').html(text).css('display','block');
-                        } 
-                    });
-                }
-            });
-           }
-    </script>
-    <script type="text/javascript">
-        //表单提交时加载动画
-        function getId(id) {
-            return document.getElementById(id);
-        }
-        function validation() {
-            getId("btnS").style.display="none";
-            getId("loading").style.display="";
-            return true;
-        }
- 	</script> 
- 	<script>
-        //自动联想及PicSearch判断
-        $(function(){
-            $('#search input[name="title"]').keyup(function(){
-                var text=document.getElementById("title");
-                var i=text.value.indexOf('!image:')
-                if (i != '-1') {
-                    $("#srhauto").fadeOut(100);
-                    $("#picstip").fadeIn(500);
-                } else {
-                    $("#picstip").fadeOut(100);
-                $.post( './functions/srhauto.php', { 'value' : $(this).val() },function(data){
-                    if( document.getElementById("title").value == '' ) 
-                        $('#srhauto').html('').css('display','none');
-                    else
-                        $('#srhauto').html(data).css('display','block');
-                });
-                }
-            });
-        });
-	</script>
-    <script>
-    //判断类型并AJAX提交
-    function airsim()
-    {
-        if (document.getElementById("title").value!='') {
-        var oBtn1=document.getElementById('btnS');
-        var oInput=document.getElementById("title");
-        var i=oInput.value.indexOf('type:\\d/');
-            if (i != '-1'){
-                getId("btnS").style.display="none";
-                getId("btnUP").style.display="none";
-                getId("loading").style.display="";
-                var name = oInput.value.substring(0,oInput.value.indexOf("type:\\d/"));
-                window.location.href='./d/?'+name;
+      // Anime
+      if (type == 'a') {
+        if (keytitle != '') {
+          if (res_is == 'on') {
+            $('#rst_res_card').css('display', '');
+            $('#rst_res').html('loading...');
+          } else {
+            $('#rst_res_card').css('display', 'none');
+          }
+          if (bt_is == 'on') {
+            $('#rst_bt_card').css('display', '');
+            $('#rst_bt').html('<div class="mdui-panel-item"><div class="mdui-panel-item-header">loading...</div><div class="mdui-panel-item-body"></div></div>');
+          } else {
+            $('#rst_bt_card').css('display', 'none');
+          }
+          $('#rst_s_card').css('display', '');
+          $('#btnUP').css('display', 'none');
+          $('#rst_s').html('<div class="mdui-panel-item"><div class="mdui-panel-item-header">loading...</div><div class="mdui-panel-item-body"></div></div>');
+          $('#bgminfo_card').html('<div class="mdui-card mdui-col-xs-12 mdui-col-md-10 mdui-col-offset-md-1 sites-card"><div class="mdui-card-header"><div class="mdui-card-header-title">番剧信息</div><div id="des_bgminfo_card" class="mdui-card-header-subtitle"></div></div></div>');
+          $('#des_bgminfo_card').html('(ฅ´ω`ฅ) 想知道 <a style="color: #333;" href="javascript:searchBmgInfo(\'a\',\'' + keytitle + '\');">' + keytitle + '</a> 的番剧信息嘛？');
+          $('#bgminfo_card').css('display', '');
+          $.post('./function/sonline.php', {
+            'kt': keytitle
+          }, function(data) {
+            if (data) {
+              $('#rst_s').html(data);
             } else {
-                var title=oInput.value;
-                getId("srhauto").style.display="none";
-                getId("btnS").style.display="none";
-                getId("btnUP").style.display="none";
-                getId("loading").style.display="";
-                    $.get( './run.php', { 'title' : title },function(data){
-                        if( title == '' ) 
-                            alert("搜索失败，请刷新重试");
-                        else
-                            $('#rst_show').html(data).css('display','block');
-                            document.getElementById("title").value='';
-                            getId("ifhomea").style.display="none";
-                            getId("ifhomeai").style.display="none";
-                            getId("ifhomeaii").style.display="none";
-                            getId("srhauto").style.display="none";
-                            getId("btnS").style.display="";
-                            getId("loading").style.display="none";
-                            getId("picstip").style.display="none";
-                            //获取番剧信息
-                                //联想标题
-                                    $(function(){
-                                        $("#infoget").click(function(){
-                                            $('#banguim_info').html('<br>少女祈愿中...').css('display','block');
-                                            var t=document.getElementById("infoget").name;
-                                            $.post( './functions/bangumiinfo.php', { 'value' : t },function(data){
-                                            if( t == '' ) 
-                                                $('#banguim_info').html('').css('display','none');
-                                            else
-                                                $('#banguim_info').html(data).css('display','block');
-                                            });
-                                        });
-                                    });
-                                //原标题
-                                    $(function(){
-                                        $("#infogeto").click(function(){
-                                            $('#banguim_info').html('<br>少女祈愿中...').css('display','block');
-                                            var t=document.getElementById("infogeto").name;
-                                            $.post( './functions/bangumiinfo.php', { 'value' : t },function(data){
-                                                if( t == '' ) 
-                                                    $('#banguim_info').html('').css('display','none');
-                                                else
-                                                    $('#banguim_info').html(data).css('display','block');
-                                            });
-                                        });
-                                    });
-                                //
-                    });
+              $('#rst_s').html('<div class="mdui-panel-item"><div class="mdui-panel-item-header">error</div><div class="mdui-panel-item-body"></div></div>');
             }
+          });
+          if (bt_is == 'on') {
+            $.post('./function/bts.php', {
+              'kt': keytitle
+            }, function(data) {
+              if (data) {
+                $('#rst_bt').html(data);
+              } else {
+                $('#rst_bt').html('抱歉，没找到这部番呢...');
+              }
+            });
+          }
+          if (res_is == 'on') {
+            $.post('./function/resources.php', {
+              'kt': keytitle
+            }, function(data) {
+              if (data) {
+                $('#rst_res').html(data);
+              } else {
+                $('#rst_res').html('抱歉，没找到这部番呢...');
+              }
+            });
+          }
         }
+      }
+
+      // Comic
+      if (type == 'c') {
+        if (keytitle != '') {
+          $('#rst_res_card').css('display', 'none');
+          $('#rst_s_card').css('display', '');
+          $('#btnUP').css('display', 'none');
+          $('#rst_s').html('<div class="mdui-panel-item"><div class="mdui-panel-item-header">loading...</div><div class="mdui-panel-item-body"></div></div>');
+          $.post('./function/conline.php', {
+            'kt': keytitle
+          }, function(data) {
+            if (data) {
+              $('#rst_s').html(data);
+            } else {
+              $('#rst_s').html('<div class="mdui-panel-item"><div class="mdui-panel-item-header">error</div><div class="mdui-panel-item-body"></div></div>');
+            }
+          });
+        }
+      }
+
+      // Image
+      if (type == 'i') {
+        $('#btnUP').css('display', 'none');
+        $('#keytitle').val('loading...');
+        $.post('./function/picsearch.php', {
+          'picurl': keytitle
+        }, function(data) {
+          var picData = JSON.parse(data);
+          if (picData.title_chinese) {
+            var mins = parseInt(picData.at / 60);
+            var secs = picData.at % 60;
+            var nums = Number(picData.similarity).toFixed(5) * 100;
+            if (nums >= 95) {
+              var numsDes = '可信度高';
+            } else if (nums >= 90) {
+              var numsDes = '可信度中';
+            } else {
+              var numsDes = '可信度小';
+            }
+            var titleMsg = picData.title_chinese + '<br>第 ' + picData.episode + ' 话，' + mins + ' 分 ' + secs + ' 秒' + '<br>相似度 ' + nums + '% | ' + numsDes;
+          } else {
+            var titleMsg = '抱歉，未找到相关番剧...'
+          }
+          $('#keytitle').val('');
+          $('#rst_info').html('<div class="mdui-col-xs-8 mdui-col-md-10" style="padding-right:0;"><div class="bgm-item" data-title="' + picData.title_chinese + '" style="background-color:#D4C7DE;width: 100%;" plan="black"><img style="height:420px;" src="' + keytitle + '" class=""><h3 style="background:linear-gradient(rgba(233,227,238,0),rgba(233,227,238,.6),rgba(233,227,238,.8));">' + titleMsg + '</h3><b>PicSearch</b></div></div><div class="mdui-col-xs-4 mdui-col-md-2" style="padding:0;"><div class="mdui-list bgm-info-list"><a href="./?kt=' + picData.title_chinese + '&type=a" class="mdui-list-item mdui-ripple">Search</a><a target="_blank" href="https://trace.moe/?url=' + picData.picurl + '" class="mdui-list-item mdui-ripple">Trace.moe</a></div></div>');
+          $('#rst_info_card').css('display', 'block');
+        });
+      }
+    }
+  });
+
+  // 获取番剧信息
+  function searchBmgInfo(type, keytitle) {
+    if (type == 'a') {
+      type = 2;
+    }
+    $('#des_bgminfo_card').html('少女祈愿中...');
+    $.post('./function/bgminfo.php', {
+      'type': type,
+      'keytitle': keytitle
+    }, function(data) {
+      if (data != '') {
+        var infoData = JSON.parse(data);
+        infoData.url = infoData.url.replace('http://', 'https://');
+        $('#bgminfo_card').html('<div style="padding: 0;" class="mdui-card mdui-col-xs-12 mdui-col-md-10 mdui-col-offset-md-1 sites-card"><div class="mdui-row"><div class="mdui-col-xs-12"><div class="bgm-item" data-title="' + infoData.name_cn + '" style="background-color:#D4C7DE;width: 100%;" plan="black"><a href="' + infoData.url + '" target="_blank"><img src="' + infoData.images.large + '"><h3 style="background:linear-gradient(rgba(233,227,238,0),rgba(233,227,238,.6),rgba(233,227,238,.8));">' + infoData.summary + '</h3><b>' + infoData.name_cn + '</b></a></div></div></div></div>');
+      } else {
+        $('#bgminfo_card').html('<div class="mdui-card mdui-col-xs-12 mdui-col-md-10 mdui-col-offset-md-1 sites-card"><div class="mdui-card-header"><div class="mdui-card-header-title">番剧信息</div><div id="des_bgminfo_card" class="mdui-card-header-subtitle">抱歉没有找到唉...</div></div></div>');
+      }
+    });
+  }
+
+  // 获取追番列表
+  function getUserbgm(type) {
+    var if_userbgm = '<?php echo $_COOKIE["user_id"]; ?>';
+    var if_run = $('#userbgm_pro').css("display");
+    if (if_userbgm != '' && if_run == 'none') {
+      $('#userbgm_pro').css('display', 'block');
+      $("#des_userbgm_card").text('#Bangumi');
+      $.post('./function/userbgm.php', {
+        'type': type
+      }, function(data) {
+        if (data) {
+          var oriData = JSON.parse(data);
+          var userbmgData = oriData[0]['data'];
+          var f = '';
+          for (let i = 0; i < userbmgData.length; i++) {
+            f = f + '<div class="bgm-item" data-title="' + userbmgData[i]['name'] + '" style="background-color:#D4C7DE;width:20%;" plan="black"><a href="javascript:newBgmS(\'' + userbmgData[i]['subject']['name_cn'] + '\');"><img src="' + userbmgData[i]['subject']['images']['large'] + '" class=""><h3 style="background:linear-gradient(rgba(233,227,238,0),rgba(233,227,238,.6),rgba(233,227,238,.8));">' + userbmgData[i]['subject']['name_cn'] + '</h3></a></div>';;
+          }
+          $('#userbgm_pro').css('display', 'none');
+          $('#userbgm_show').html(f);
+        } else {
+          $('#userbgm_show').html('抱歉，出错了呢...');
+        }
+      });
+    }
+  }
+
+  //下拉框选择改变事件
+  function typeChange(values) {
+    if (values == "a") {
+      $('#keytitle').attr('placeholder', '🎐您想搜索的番剧是？');
+      $('#btnUP').css('display', 'none');
+    }
+    if (values == "c") {
+      $('#keytitle').attr('placeholder', '🏮您想搜索的漫画是？');
+      $('#btnUP').css('display', 'none');
+    }
+    if (values == "n") {
+      $('#keytitle').attr('placeholder', '什么也没有...');
+      $('#btnUP').css('display', 'none');
+    }
+    if (values == "i") {
+      $('#keytitle').attr('placeholder', '「以图搜番」请输入图片链接，或点击右侧 UP 上传');
+      $('#btnUP').css('display', 'block');
+    }
+  }
+
+  $('#keytitle').bind('keypress', function(event) {
+    if ($('#keytitle').val() == '') {
+      $('#Sl').addClass("h");
+    }
+  });
+
+  $('#keytitle').keyup(function(event) {
+    if (event.keyCode == '13') {
+      event.preventDefault();
+      //回车执行
+      $("#btnS").click();
     }
 
-        // '/?title=' 执行AJAX
-        var sotitle ="<?php echo $sotitle; ?>";
-        if (sotitle!='') {
-            var i=sotitle.indexOf(' type:');
-            if (i != "-1") {
-                var name1 = sotitle.substring(0,sotitle.indexOf(" type:"));
-                var name2 = " type:\\"+sotitle.substring(sotitle.indexOf(" type:")+6,sotitle.indexOf("/"))+"/";
-                sotitle=name1+name2;
-            }
-            document.getElementById('title').value=sotitle;
-            airsim();
-        }
-
-        //按钮 执行AJAX
-        document.getElementById('btnS').onclick=function() {
-            airsim();
-        };
-
-	    //回车 执行AJAX
-        $('#title').bind('keypress', function(event) {  
-            if (event.keyCode == "13") {              
-                event.preventDefault();   
-                //回车执行
-                airsim(); 
-            }  
+    if (event.keyCode != '13') {
+      var keytitle = document.getElementById("keytitle").value;
+      if (keytitle == '') {
+        $('#Sl').addClass("h");
+      } else {
+        $.post('./function/sact.php', {
+          'kt': keytitle
+        }, function(data) {
+          if (data) {
+            $('#Sl').removeClass("h");
+            $('#rst_sact').html(data);
+          } else {
+            $('#Sl').addClass("h");
+          }
         });
-    </script>
-</body>
-</html>
+      }
+    }
+  });
+
+  $(document).click(function(e) {
+    var v_id = e.target.id;
+    if (v_id == 'AASS' || v_id == 'keytitle') {
+      if ($('#keytitle').val() == '') {
+        $('#Sl').addClass("h");
+      } else {
+        $('#Sl').removeClass("h");
+      }
+    } else {
+      $('#Sl').addClass("h");
+    }
+  });
+
+  $("#btnUP").click(function() {
+    $('#btnFile').click();
+  });
+
+  $("#btnFile").change(function() {
+    if ($(this).val()) {
+      $('#btnUUP').click();
+    }
+  });
+
+  function addInputKT(keytitle) {
+    document.getElementById("keytitle").value = keytitle;
+  }
+
+  function newBgmS(keytitle) {
+    $("#keytitle").val(keytitle);
+    document.getElementById('typeName').value = 'a';
+    $("#btnS").click();
+    window.scrollTo(0, 0);
+  }
+
+  function noUserbgm() {
+    $.cookie('noUserbgm', 'true', {
+      expires: 30,
+      path: '/'
+    });
+    mdui.alert('我的追番已关闭。<br>您可以在 右上角-设置 中关联后重新开启。');
+    $('#userbgm_card').css('display', 'none');
+  }
+
+  function AGEgetBaiduYunUrl(url) {
+    var bt_is = "<?php echo $GLOBALS['bt_is']; ?>";
+    if (bt_is == 'on') {
+      $.post('./function/small/AGEgetPanUrl.php', {
+        'url': url
+      }, function(data) {
+        if (data) {
+          var panData = JSON.parse(data);
+          $('#airDialog').html('<div class="mdui-dialog-title">' + panData.title + '</div><div class="mdui-dialog-content">来自 AGEFans 的百度云盘<br>链接: <a style="color:#FD5B78;" href="' + panData.link + '" target="_blank">' + panData.link + '</a><br>提取码：' + panData.psw + '</div><div class="mdui-dialog-actions"><button class="mdui-btn mdui-ripple" mdui-dialog-close>知道了</button></div>');
+          var inst = new mdui.Dialog('#airDialog', {
+            modal: true
+          });
+          inst.open();
+        } else {
+          $('#airDialog').html('抱歉，没找到这部番呢...');
+        }
+      });
+    }
+  }
+
+  // '/?kt={...}&type={...}'
+  var sotitle = '<?php echo @$_GET["kt"]; ?>';
+  var type = '<?php echo @$_GET["type"]; ?>';
+  if (type) {
+    if (type != 'a' && type != 'i' && type != 'c' && type != 'n') {
+      type = 'a';
+    }
+    document.getElementById('typeName').value = type;
+  }
+  if (sotitle) {
+    $('#keytitle').val(sotitle);
+    $("#btnS").click();
+  }
+</script>
